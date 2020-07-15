@@ -33,6 +33,7 @@ var defer = function(){
 
 // Build Adapter Object
 var adapter = {
+  defer: defer,
   http: function (args) {
     var url = args.url;
     var debug = args.debug;
@@ -43,9 +44,14 @@ var adapter = {
 
     // Pass along cookies
     fetchOptions.credentials = args.credentials || '';
+    if (fetchOptions.credentials === '') {
+      delete fetchOptions.credentials;
+    }
 
-    // data neeeds to map to body
-    fetchOptions.body = fetchOptions.data;
+    // data neeeds to map to body if data is populated and this is not a GET or HEAD request
+    if (!['GET', 'HEAD'].includes(fetchOptions.method) && fetchOptions.data) {
+      fetchOptions.body = fetchOptions.data;
+    }
 
     debug && console.log("DEBUG[native](fetchOptions)", fetchOptions);
 
@@ -87,6 +93,5 @@ var buildfhir = function buildfhir(config) {
   // debugger;
   return mkFhir(config, adapter);
 };
-
 buildfhir.defer = defer;
 module.exports = buildfhir;

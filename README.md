@@ -22,7 +22,7 @@ JavaScript client for FHIR
 
 `Node.js` is required for build.
 
-We recommend installling Node.js using [nvm](https://github.com/creationix/nvm/blob/master/README.markdown)
+We recommend installing Node.js using [nvm](https://github.com/creationix/nvm/blob/master/README.md#installation)
 
 Build & test:
 
@@ -31,16 +31,13 @@ git clone https://github.com/FHIR/fhir.js
 cd fhir.js
 npm install
 
-# buld fhir.js
+# build fhir.js
 npm run-script build
 
-# run all tests once
-npm run-script spec
+# run tests in node
+npm run-script test
 
-# watch tests while development
-npm run-script spec-watch
-
-# run integration tests
+# run tests in phantomjs
 npm run-script integrate
 ```
 
@@ -166,12 +163,14 @@ Here are implementations for:
 
 ### Resource's CRUD
 
+#### Create Resource
+
 To create a FHIR resource, call
 `myClient.create(entry, callback, errback)`, passing
-an object that contains the following propperties:
+an object that contains the following properties:
 
-* `content` (required) - resource in FHIR json
-* `tags` (opttional) - list of categories (see below)
+* `resource` (required) - resource in FHIR json
+* `tags` (optional) - list of categories (see below)
 
 In case of success,the  callback function will be
 invoked with an object that contains the following
@@ -185,7 +184,7 @@ attributes:
 
 var entry = {
   category: [{term: 'TAG term', schema: 'TAG schema', label: 'TAG label'}, ...]
-  content: {
+  resource: {
     resourceType: 'Patient',
     //...
   }
@@ -202,16 +201,20 @@ myClient.create(entry,
 
 ```
 
-### Tags Operations
+#### Get resource
 
-### Search
+To get one specific object from a resource (usually by id), call `fhir.read({type: resourceType})`. To specify the patient identifier, call `fhir.read({type: resourceType, patient: patientIdentifier})`
 
-`fhir.search('Patient', queryObject, callback, errback)` function is used
-for [FHIR resource's search](http://www.hl7.org/implement/standards/fhir/search.html).
+Examples:
 
-If success callback will be called with resulting [bundle](http://www.hl7.org/implement/standards/fhir/json.html#bundle).
+```js
+fhir.read({type: 'Patient', patient: '8673ee4f-e2ab-4077-ba55-4980f408773e'})
+```
 
-For queryObject syntax `fhir.js` adopts
+#### Search Resource
+
+To search a resource, call `fhir.search({type: resourceType, query: queryObject})`,
+where queryObject syntax `fhir.js` adopts
 mongodb-like query syntax ([see](http://docs.mongodb.org/manual/tutorial/query-documents/)):
 
 ```javascript
@@ -238,6 +241,32 @@ mongodb-like query syntax ([see](http://docs.mongodb.org/manual/tutorial/query-d
 
 ```
 
+#### Update Resource
+
+To update a resource, call `fhir.update({type: resourceType, id: identifier, resource: resourceObject})`.
+In case of success,the  callback function will be invoked.
+
+Example: 
+```javascript
+ 	this.fhirClient.update({
+            type: "Patient",
+            id: 1,
+            resource: {
+		name: 'New Name'
+            }
+        }).catch(function(e){
+            console.log('An error happened while updating patient: \n' + JSON.stringify(e));
+            throw e;
+        }).then(function(bundle){
+            console.log('Updating patient successed');
+            return bundle;
+        });
+```
+
+#### Delete Resource
+
+To update a resource, call `fhir.delete({type: resourceType, id: identifier})`.
+
 For more information see [tests](https://github.com/FHIR/fhir.js/blob/master/test/querySpec.coffee)
 
 ## AngularJS adapter: `ng-fhir`
@@ -247,16 +276,31 @@ AngularJS adapter after `npm run-script build` can be found at `dist/ngFhir.js`
 
 Usage:
 
-```coffeescript
+```javascript
 angular.module('app', ['ng-fhir'])
-  .config ($fhirProvider)->
-     $fhirProvider.baseUrl = 'http://try-fhirplace.hospital-systems.com'
-  .controller 'mainCtrl', ($scope, $fhir)->
-     $fhir.search
-       type: 'Patient'
-       query: {name: {$exact: 'Maud'}}
-       error: (error)-> $scope.error = error
-       success: (bundle)-> $scope.patients = bundle.entry
+  .config(['$fhirProvider', function ($fhirProvider) {
+    $fhirProvider.baseUrl = 'http://try-fhirplace.hospital-systems.com';
+    $fhirProvider.auth = {
+      user: 'user',
+      pass: 'secret'
+    };
+    $fhirProvider.credentials = 'same-origin'
+  }])
+  .controller('mainCtrl', ['$scope', '$fhir', function ($scope, $fhir) {
+    $fhir.search(
+      {
+        type: 'Patient',
+        query: {name: 'emerald'}
+      }).then(
+      function (successData) {
+        $scope.patients = successData.data.entry;
+
+      },
+      function (failData) {
+        $scope.error = failData;
+      }
+    );
+  }]);  
 ```
 
 ## jQuery adapter: `jqFhir`

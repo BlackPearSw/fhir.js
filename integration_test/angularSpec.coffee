@@ -1,11 +1,9 @@
-jasmine.DEFAULT_TIMEOUT_INTERVAL = 10000
-
 fhir = require('../src/adapters/angularjs')
 spec = require('../src/spec.coffee')
 
 
 
-baseUrl = 'http://try-fhirplace.hospital-systems.com'
+baseUrl = spec.baseUrl
 app = angular.module('test', ['ng-fhir'])
 app.config ($fhirProvider)-> $fhirProvider.baseUrl = baseUrl
 $injector = angular.injector(['test'])
